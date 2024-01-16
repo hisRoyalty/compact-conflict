@@ -13,7 +13,7 @@ var mapWidth = 30,
 // ==========================================================
 
 // === The possible move types
-var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
+var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3, SURRENDER = 4;
 
 // === Player properties
 var PLAYER_TEMPLATES = [
@@ -27,21 +27,21 @@ var PLAYER_TEMPLATES = [
 var UPGRADES = [
     {n: "Extra soldier", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income: X% more each turn.",
-        c: [15, 25], x: [20, 40],
+        c: [15, 25, 35], x: [20, 40, 60],
         b: '#66f'},
     {n: "X of Fire",  d: "Attack: X invincible soldier(s).",
-        c: [20, 30], x: [1, 2],
+        c: [20, 30, 40], x: [1, 2, 3],
         b: '#f88'},
     {n: "X of Air",   d: "Move: X extra move(s) per turn.",
-        c: [25, 35], x: [1, 2],
+        c: [25, 35, 45], x: [1, 2, 3],
         b: '#ffa'},
     {n: "X of Earth", d: "Defense: Always kill X invader(s).",
-        c: [30, 45], x: [1, 2],
+        c: [30, 45, 60], x: [1, 2, 3],
         b: '#696'},
     {n: "Rebuild temple", d: "Switch to a different upgrade.",
         c: [0], x: []}
     ],
-    LEVELS = ["Temple", "Cathedral"],
+    LEVELS = ["Temple", "Cathedral", "Basilica"],
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4], RESPEC = UPGRADES[5];
 
 // === Constants for setup screen
@@ -417,6 +417,7 @@ function gradientStop(percent, color) {
 	});
 }
 
+
 // Generate a SVG gradient tag for the map.
 function makeGradient(id, light, dark) {
 	return elem('radialGradient', {
@@ -587,7 +588,8 @@ function uiPickMove(player, state, reportMoveCallback) {
 	var cleanState = {
 		b: [
 			{t: 'Cancel move', h:1},
-			{t: 'End turn'}
+			{t: 'End turn'},
+            {t: 'Surrender'}
 		]
 	};
 
@@ -666,7 +668,17 @@ function uiPickMove(player, state, reportMoveCallback) {
                 // end turn
                 uiCallbacks = {};
                 reportMoveCallback({t: END_TURN});
-            } else {
+            }
+            if (which == 2) {
+                forEachProperty(state.o, function(p, r) {
+                    if (player == p)
+                        delete state.o[r];
+                });
+                showBanner('#222', player.n + " has surrendered!", 450);
+                uiCallbacks = {};
+                reportMoveCallback({t: END_TURN});
+            }
+             else {
                 // cancel move
                 setCleanState();
             }
@@ -966,6 +978,7 @@ function updateMapDisplay(gameState) {
     }
 }
 
+
 function updateIngameUI(gameState) {
     var moveState = gameState.m;
     var decisionState = gameState.d;
@@ -981,6 +994,7 @@ function updateIngameUI(gameState) {
     } else {
         $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b>' + ((gameSetup.tc != UNLIMITED_TURNS) ? ' / ' + gameSetup.tc : '');
     }
+
 
     // player data
     map(gameState.p, function(player, index) {
@@ -2133,6 +2147,7 @@ function storeSetupInLocalStorage() {
         localStorage.setItem("s", JSON.stringify(gameSetup));
     }
 }
+
 
 function prepareSetupUI() {
     // player box area
